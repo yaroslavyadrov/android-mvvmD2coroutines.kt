@@ -1,7 +1,6 @@
 package ft.bw.ohdude.data
 
 import kotlinx.coroutines.experimental.delay
-import kotlinx.coroutines.experimental.runBlocking
 
 class SampleRepository {
 

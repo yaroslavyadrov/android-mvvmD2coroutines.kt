@@ -1,22 +1,18 @@
 package ft.bw.ohdude.ui.list
 
-import android.arch.lifecycle.MutableLiveData
-import ft.bw.ohdude.base.BaseViewModel
+import ft.bw.ohdude.base.BasePresenter
 import ft.bw.ohdude.data.SampleRepository
 import kotlinx.coroutines.experimental.launch
 import java.lang.Thread.sleep
-import javax.inject.Inject
 
-class ListActivityViewModel @Inject constructor(
+class ListActivityPresenter constructor(
         private val repository: SampleRepository
-) : BaseViewModel() {
+) : BasePresenter() {
 
     private var days = 0
-    val daysLiveData = MutableLiveData<Int>()
 
     fun ohDudeClick() {
         days = 0
-        daysLiveData.postValue(days)
     }
 
     fun onPlusClick() {
@@ -25,7 +21,6 @@ class ListActivityViewModel @Inject constructor(
             days += 1
             sleep(400)
             data = repository.getSomeData().toString()
-            daysLiveData.postValue(data.toInt() + days)
         }
     }
 
@@ -34,7 +29,6 @@ class ListActivityViewModel @Inject constructor(
             days -= 1
             val data = repository.getSomeData()
             Thread.sleep(400)
-            daysLiveData.postValue(data - days)
         }
     }
 }
