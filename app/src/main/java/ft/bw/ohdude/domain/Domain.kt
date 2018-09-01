@@ -2,8 +2,7 @@ package ft.bw.ohdude.domain
 
 private val FIRST_OPERATION = ExpectedOperation(
         type = OperationType.ADD,
-        expected = 0,
-        previousItemIdentifier = ""
+        expected = 0
 )
 
 data class Balance(
@@ -11,23 +10,19 @@ data class Balance(
 )
 
 fun Balance.addOperation(type: OperationType, amount: Int) {
-    val previousItem = operationsList.last()
-    val previousHash = previousItem.identifier
-    val operation = ExpectedOperation(
-            type,
-            amount,
-            previousHash
-    )
+    val operation = ExpectedOperation(type, amount)
     operationsList.add(operation)
 }
 
 fun Balance.getCurrentActualBalance(): Int {
-    return operationsList.fold(0) { acc: Int, expectedOperation: ExpectedOperation ->
-        when (expectedOperation.type) {
-            OperationType.ADD -> acc + expectedOperation.actual
-            OperationType.REMOVE -> acc - expectedOperation.actual
-        }
-    }
+    return operationsList
+            .filter { it.nextRevisionId.isEmpty() }
+            .fold(0) { acc: Int, expectedOperation: ExpectedOperation ->
+                when (expectedOperation.type) {
+                    OperationType.ADD -> acc + expectedOperation.actual
+                    OperationType.REMOVE -> acc - expectedOperation.actual
+                }
+            }
 }
 
 fun Balance.getExpectedBalance(timestamp: Long): Int {
@@ -37,15 +32,22 @@ fun Balance.getExpectedBalance(timestamp: Long): Int {
     } else {
         index
     }
-    return operationsList.subList(0, actualIndex + 1).fold(0) { acc: Int, expectedOperation: ExpectedOperation ->
-        when (expectedOperation.type) {
-            OperationType.ADD -> acc + expectedOperation.expected
-            OperationType.REMOVE -> acc - expectedOperation.expected
-        }
-    }
+    return operationsList.subList(0, actualIndex + 1)
+            .asSequence()
+            .filter { it.nextRevisionId.isEmpty() }
+            .fold(0) { acc: Int, expectedOperation: ExpectedOperation ->
+                when (expectedOperation.type) {
+                    OperationType.ADD -> acc + expectedOperation.expected
+                    OperationType.REMOVE -> acc - expectedOperation.expected
+                }
+            }
 }
 
-private inline fun Balance.performActionOverOperation(operationId: String, amount: Int, mutator: (ExpectedOperation) -> ExpectedOperation) {
+private tailrec fun Balance.performActionOverOperation(
+        operationId: String,
+        amount: Int,
+        mutator: (ExpectedOperation) -> ExpectedOperation
+) {
     if (amount < 0) {
         throw Exception("You can pass only positive amount")
     }
@@ -53,38 +55,39 @@ private inline fun Balance.performActionOverOperation(operationId: String, amoun
     when (index) {
         -1 -> throw Exception("Operation(id = $operationId) not found")
         0 -> throw Exception("You cannot change this operation")
-        operationsList.lastIndex -> {
-            operationsList[index] = mutator(operationsList.last())
-        }
         else -> {
-            val renewOperation = mutator(operationsList[index])
-            operationsList.add(renewOperation)
-            val nextIndex = index + 1
-            val previousIndex = index - 1
-            operationsList.removeAt(index)
-            operationsList[nextIndex] = operationsList[nextIndex].copy(
-                    previousItemIdentifier = operationsList[previousIndex].identifier
-            )
+            val previousRevision = operationsList[index]
+            if (previousRevision.nextRevisionId.isNotEmpty()) {
+                performActionOverOperation(previousRevision.nextRevisionId, amount, mutator)
+            } else {
+                val newRevision = mutator(previousRevision)
+                operationsList.add(newRevision)
+                operationsList[index] = previousRevision.copy(
+                        nextRevisionId = newRevision.identifier
+                )
+            }
         }
     }
 }
 
 fun Balance.addAmountToOperation(operationId: String, amount: Int) {
-    performActionOverOperation(operationId, amount) {
-        it.copy(
-                actual = it.actual + amount,
-                timestamp = System.currentTimeMillis(),
-                previousItemIdentifier = operationsList.last().identifier
+    performActionOverOperation(operationId, amount) { previousRevision ->
+        previousRevision.copy(
+                type = previousRevision.type,
+                expected = previousRevision.expected,
+                previousRevisionId = previousRevision.identifier,
+                actual = previousRevision.actual + amount
         )
     }
 }
 
 fun Balance.removeAmountFromOperation(operationId: String, amount: Int) {
-    performActionOverOperation(operationId, amount) {
-        it.copy(
-                actual = it.actual - amount,
-                timestamp = System.currentTimeMillis(),
-                previousItemIdentifier = operationsList.last().identifier
+    performActionOverOperation(operationId, amount) { previousRevision ->
+        previousRevision.copy(
+                type = previousRevision.type,
+                expected = previousRevision.expected,
+                previousRevisionId = previousRevision.identifier,
+                actual = previousRevision.actual - amount
         )
     }
 }
@@ -92,7 +95,8 @@ fun Balance.removeAmountFromOperation(operationId: String, amount: Int) {
 data class ExpectedOperation(
         val type: OperationType,
         val expected: Int,
-        val previousItemIdentifier: String,
+        val previousRevisionId: String = "",
+        val nextRevisionId: String = "",
         val actual: Int = 0,
         val timestamp: Long = System.currentTimeMillis()
 )
