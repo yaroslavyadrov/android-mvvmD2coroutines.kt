@@ -45,12 +45,8 @@ fun Balance.getExpectedBalance(timestamp: Long): Int {
 
 private tailrec fun Balance.performActionOverOperation(
         operationId: String,
-        amount: Int,
         mutator: (ExpectedOperation) -> ExpectedOperation
 ) {
-    if (amount < 0) {
-        throw Exception("You can pass only positive amount")
-    }
     val index = operationsList.indexOfLast { it.identifier == operationId }
     when (index) {
         -1 -> throw Exception("Operation(id = $operationId) not found")
@@ -58,7 +54,7 @@ private tailrec fun Balance.performActionOverOperation(
         else -> {
             val previousRevision = operationsList[index]
             if (previousRevision.nextRevisionId.isNotEmpty()) {
-                performActionOverOperation(previousRevision.nextRevisionId, amount, mutator)
+                performActionOverOperation(previousRevision.nextRevisionId, mutator)
             } else {
                 val newRevision = mutator(previousRevision)
                 operationsList.add(newRevision)
@@ -71,24 +67,26 @@ private tailrec fun Balance.performActionOverOperation(
 }
 
 fun Balance.addAmountToOperation(operationId: String, amount: Int) {
-    performActionOverOperation(operationId, amount) { previousRevision ->
-        previousRevision.copy(
-                type = previousRevision.type,
-                expected = previousRevision.expected,
-                previousRevisionId = previousRevision.identifier,
-                actual = previousRevision.actual + amount
-        )
+    if (amount < 0) {
+        throw Exception("You can pass only positive amount")
+    }
+    performActionOverOperation(operationId) { previousRevision ->
+        previousRevision.copy(actual = previousRevision.actual + amount)
     }
 }
 
 fun Balance.removeAmountFromOperation(operationId: String, amount: Int) {
-    performActionOverOperation(operationId, amount) { previousRevision ->
-        previousRevision.copy(
-                type = previousRevision.type,
-                expected = previousRevision.expected,
-                previousRevisionId = previousRevision.identifier,
-                actual = previousRevision.actual - amount
-        )
+    if (amount < 0) {
+        throw Exception("You can pass only positive amount")
+    }
+    performActionOverOperation(operationId) { previousRevision ->
+        previousRevision.copy(actual = previousRevision.actual - amount)
+    }
+}
+
+fun Balance.changeExpectedValueForOperation(operationId: String, newExpected: Int) {
+    performActionOverOperation(operationId) { previousOperation ->
+        previousOperation.copy(expected = newExpected)
     }
 }
 
