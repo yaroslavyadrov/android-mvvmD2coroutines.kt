@@ -58,9 +58,7 @@ private tailrec fun Balance.performActionOverOperation(
             } else {
                 val newRevision = mutator(previousRevision)
                 operationsList.add(newRevision)
-                operationsList[index] = previousRevision.copy(
-                        nextRevisionId = newRevision.identifier
-                )
+                operationsList[index] = previousRevision.copy(nextRevisionId = newRevision.identifier)
             }
         }
     }
@@ -71,7 +69,11 @@ fun Balance.addAmountToOperation(operationId: String, amount: Int) {
         throw Exception("You can pass only positive amount")
     }
     performActionOverOperation(operationId) { previousRevision ->
-        previousRevision.copy(actual = previousRevision.actual + amount)
+        previousRevision.copy(
+                actual = previousRevision.actual + amount,
+                previousRevisionId = previousRevision.identifier,
+                timestamp = System.currentTimeMillis()
+        )
     }
 }
 
@@ -80,13 +82,21 @@ fun Balance.removeAmountFromOperation(operationId: String, amount: Int) {
         throw Exception("You can pass only positive amount")
     }
     performActionOverOperation(operationId) { previousRevision ->
-        previousRevision.copy(actual = previousRevision.actual - amount)
+        previousRevision.copy(
+                actual = previousRevision.actual - amount,
+                previousRevisionId = previousRevision.identifier,
+                timestamp = System.currentTimeMillis()
+        )
     }
 }
 
 fun Balance.changeExpectedValueForOperation(operationId: String, newExpected: Int) {
     performActionOverOperation(operationId) { previousOperation ->
-        previousOperation.copy(expected = newExpected)
+        previousOperation.copy(
+                expected = newExpected,
+                previousRevisionId = previousOperation.identifier,
+                timestamp = System.currentTimeMillis()
+        )
     }
 }
 

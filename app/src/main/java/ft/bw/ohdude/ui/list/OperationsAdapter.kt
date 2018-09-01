@@ -14,6 +14,9 @@ import ft.bw.ohdude.domain.OperationType
 import ft.bw.ohdude.util.bindView
 
 class OperationsAdapter : ListAdapter<ExpectedOperation, OperationsAdapter.ViewHolder>(ExpectedOperationCallback()) {
+
+    private var onClickListener: (ExpectedOperation) -> Unit = {}
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.operation_item, parent, false)
         return ViewHolder(view)
@@ -23,13 +26,20 @@ class OperationsAdapter : ListAdapter<ExpectedOperation, OperationsAdapter.ViewH
         holder.bind(getItem(position))
     }
 
-    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    fun onClick(block: (ExpectedOperation) -> Unit) {
+        onClickListener = block
+    }
+
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val expectedValueTextView by bindView<TextView>(R.id.expectedValueTextView)
         private val actualValueTextView by bindView<TextView>(R.id.actualValueTextView)
         private val typeTextView by bindView<TextView>(R.id.typeTextView)
         private val debugTextView by bindView<TextView>(R.id.debugTextView)
 
         fun bind(operation: ExpectedOperation) {
+            itemView.setOnClickListener {
+                onClickListener(operation)
+            }
             with(operation) {
                 expectedValueTextView.text = expected.toString()
                 actualValueTextView.text = actual.toString()
@@ -50,7 +60,10 @@ class OperationsAdapter : ListAdapter<ExpectedOperation, OperationsAdapter.ViewH
         }
 
         override fun areContentsTheSame(oldItem: ExpectedOperation, newItem: ExpectedOperation): Boolean {
-            return oldItem.timestamp == newItem.timestamp && oldItem.expected == newItem.expected
+            return oldItem.timestamp == newItem.timestamp &&
+                    oldItem.expected == newItem.expected &&
+                    oldItem.previousRevisionId == newItem.previousRevisionId &&
+                    oldItem.nextRevisionId == newItem.nextRevisionId
         }
     }
 }
