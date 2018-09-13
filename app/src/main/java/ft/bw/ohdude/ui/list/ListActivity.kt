@@ -97,20 +97,14 @@ class ListActivity : BaseActivity() {
     private suspend fun askForChangeOperation(): Pair<OperationType, Int> {
         return suspendCoroutine { continuation ->
             val view = LayoutInflater.from(this).inflate(R.layout.add_dialog_view, null, false)
-            val typeSwitch = view.findViewById<Switch>(R.id.typeSwitch)
             val amountEditText = view.findViewById<EditText>(R.id.amountEditText)
             AlertDialog.Builder(this)
                     .setTitle("Изменить")
                     .setView(view)
                     .setCancelable(true)
                     .setPositiveButton("OK") { dialog, _ ->
-                        val type = if (typeSwitch.isChecked) {
-                            OperationType.ADD
-                        } else {
-                            OperationType.REMOVE
-                        }
                         val amount = amountEditText.text.toString().toInt()
-                        continuation.resume(type to amount)
+                        continuation.resume(OperationType.ADD to amount)
                         dialog.dismiss()
                     }
                     .show()

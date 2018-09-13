@@ -100,6 +100,33 @@ fun Balance.changeExpectedValueForOperation(operationId: String, newExpected: In
     }
 }
 
+fun Balance.getTotalOverspent(): Int {
+    return operationsList.asSequence()
+            .filter { it.type == OperationType.REMOVE }
+            .filter { it.actual > it.expected }
+            .fold(0) { acc, expectedOperation ->
+                acc + (expectedOperation.actual - expectedOperation.expected)
+            }
+}
+
+fun Balance.getFinalOverspentOnOperation(operationId: String): Int {
+    val operation = operationsList.find { it.identifier == operationId }
+    return if (operation != null) {
+        if (operation.nextRevisionId.isNotEmpty()) {
+            getFinalOverspentOnOperation(operation.nextRevisionId)
+        } else {
+            val overspent = operation.actual - operation.expected
+            if (overspent > 0) {
+                overspent
+            } else {
+                0
+            }
+        }
+    } else {
+        throw Exception("Cannot find operation")
+    }
+}
+
 data class ExpectedOperation(
         val type: OperationType,
         val expected: Int,

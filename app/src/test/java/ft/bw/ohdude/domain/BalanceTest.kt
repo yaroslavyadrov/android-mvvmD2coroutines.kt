@@ -34,4 +34,14 @@ class BalanceTest {
         balance.addAmountToOperation(balance.operationsList.last().identifier, 50)
         assertEquals(3, balance.operationsList.size)
     }
+
+    @Test
+    fun `overspent test`() {
+        val balance = Balance()
+        balance.addOperation(OperationType.ADD, 5000)
+        balance.addAmountToOperation(balance.operationsList.last().identifier, 5000)
+        balance.addOperation(OperationType.REMOVE, 4000)
+        balance.addAmountToOperation(balance.operationsList.last().identifier, 5000)
+        assertEquals(1000, balance.getTotalOverspent())
+    }
 }
