@@ -1,8 +1,8 @@
 {
   "title": [
     {
-      "pattern": "(fix|bugfix|feat|feature|hotfix|chore)((?:[(]\\w+[)])?):\\s([A-Z]-[0-9])\\s(.{5,200})",
-      "message": "Your title needs to be prefixed with a topic"
+      "pattern": "/(fix|bugfix|feat|feature|hotfix|chore)((?:[(]\w+[)])?):\s([A-Z]+-\d+)\s(.{5,150})/",
+      "message": "Your title needs to be prefixed with a topi sdfsdfsdfsdfc"
     }
   ]
 }
