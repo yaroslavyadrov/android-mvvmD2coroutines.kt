@@ -1,1 +1,0 @@
-REGEX: (fix|bugfix|feat|feature|hotfix|chore)((?:[(]\\w+[)])?):\\s([A-Z]-[0-9])\\s(.{5,200})
